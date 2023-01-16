@@ -204,7 +204,7 @@ if __name__ == "__main__":
         if M1200dTcpSock is not None:
             initServerMsgId = 0x80
 
-            # stage 2 - wait for sonar init message....
+            # stage 2 - wait for sonar init message.... (0x80)
             while True:
 
                 userConfigMsg = bpStructs['structs']['OculusUserConfig']
