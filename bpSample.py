@@ -75,6 +75,7 @@ if __name__ == "__main__":
         # get sonar status, as sonar init procedure...
         statusTic = time.time()
         statusCnt = 0.0
+        # stage 1 - get sonar IP addr
         while True:
             
             status = getStatusMsg(udpStatusSock)
@@ -91,3 +92,34 @@ if __name__ == "__main__":
                 M1200dTcpSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 M1200dTcpSock.connect( ("%s" %status['status']['ipAddr'], tcpPort) )
                 break
+        
+        # Handle sonar data
+        if M1200dTcpSock is not None:
+            initServerMsgId = 0x80
+            simpleFireMsg2 = createOculusFireMsg(status['hdr'] )
+
+            # stage 2 - wait for sonar init message....
+            while True:
+                
+                sonData = handleOculusMsg(M1200dTcpSock, initServerMsgId)
+
+                if sonData is not None and sonData["msgId"] == initServerMsgId:
+                    print("server connection init...")
+                    break
+
+            pingTic = time.time()
+            pingCnt = 0.0
+
+            # stage 3 - handle real time data
+            while True:
+                messageSimplePingResult = 0x23
+                M1200dTcpSock.sendall(simpleFireMsg2)
+                sonData = handleOculusMsg(M1200dTcpSock, 0x23)
+                pingCnt += 1
+                #import ipdb; ipdb.set_trace()
+                if time.time() - pingTic >= 3:
+                    pps = pingCnt/(time.time()-pingTic)
+                    print("ping rate: %0.2fHz, %d"%(pps, sonData["nBeams"]) )
+                    pingTic = time.time()
+                    pingCnt = 0.0
+
