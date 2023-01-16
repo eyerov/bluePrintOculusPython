@@ -5,8 +5,18 @@ import struct
 import pickle
 import numpy as np
 import cv2
+import os
 
 import socket
+
+if not os.path.exists("oculus_h.pkl"):
+    import bpStructs as bpcs
+    bpcs.saveStructs2Pkl()
+    bpStructs = bpcs.getBpStruct()
+else:
+    with open("oculus_h.pkl", 'rb') as fid:
+        bpStructs = pickle.load(fid)
+
 
 #fileName = r'wiresharkRec/oculus.pcapng'
 fileName = r'wiresharkRec/oculus_dynamic_change_range.pcapng'
