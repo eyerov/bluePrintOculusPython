@@ -29,6 +29,49 @@ def parseStruct(payload, st, packStr = None):
     
     return data
 
+def packMsg(st):
+    data = []
+    for key in st['attributes']:
+        data.append(st['attributes'][key]['value'])
+
+    packed = struct.pack(st['packString'], data)
+    return packed
+
+
+def createOculusSimpleFireMessage2(flags = 25, rangePercent=12, gainPercent=60.0), gammaCorrection=0xff:
+    st = bpStructs['structs']['OculusSimpleFireMessage2']
+    attributes = st['attributes']
+
+    attributes['oculusId'] =  20307, 
+    attributes['srcDeviceId'] =  0
+    attributes['dstDeviceId'] =  17936
+    attributes['msgId'] =  21
+    attributes['msgVersion'] =  2
+    attributes['payloadSize'] =  73
+    attributes['spare2_'] =  0
+    attributes['masterMode'] =  1
+    attributes['pingRate'] =  1
+    attributes['networkSpeed'] =  100
+    attributes['gammaCorrection'] =  gammaCorrection
+    attributes['flags'] =  flags
+    attributes['rangePercent'] =  rangePercent
+    attributes['gainPercent'] =  gainPercent
+    attributes['speedOfSound'] =  0.0
+    attributes['salinity'] =  0.0
+    attributes['extFlags'] =  4
+    attributes['reserved_0'] =  0
+    attributes['reserved_1'] =  0
+    attributes['reserved_2'] =  0
+    attributes['reserved_3'] =  0
+    attributes['reserved_4'] =  0
+    attributes['reserved_5'] =  0
+    attributes['reserved_6'] =  0
+    attributes['reserved_7'] =  0
+
+    ret = packMsg(st)
+    return ret
+
+
 
 def getStatusMsg(sock, T=0.01):
 
@@ -54,6 +97,69 @@ def getStatusMsg(sock, T=0.01):
         ret['verInfo']= verInfo
         ret['status'] = status
         
+    return ret
+
+
+def structParseByHeader(payload):
+    headerSize = bpStructs['structs']['OculusMessageHeader']['sizeof']
+    header = parseStruct(payload[:headerSize], bpStructs['structs']['OculusMessageHeader'])
+    
+    ret = None
+    #print('cur msgId =', header['msgId'])
+    if header['msgId'] in bpStructs['enums']['OculusMessageType']['revFields'].keys():
+        curMsg = bpStructs['enums']['OculusMessageType']['revFields'][header['msgId']]
+        if curMsg == "messageUserConfig":
+            # not relevant... for parsing data (pc->sonar case...)
+            payload = payload[headerSize: ]
+            ret = parseStruct(payload, bpStructs['structs']["OculusUserConfig"])
+            ret.update({'structName':"OculusUserConfig"})
+
+        elif curMsg == "messageSimpleFire":
+            st = bpStructs['structs']["OculusSimpleFireMessage2"]
+            '''
+            payload = payload[headerSize: ]
+            packString = '<'
+            for key in st['attributes'].keys():
+                if key != "head":
+                    packString += st['attributes'][key]['packStr']
+                    #print(key, st['attributes'][key]['packStr'])
+            '''
+            ret = parseStruct(payload, st) #, packStr=packString)
+            print('------> send flags:', bin(np.uint8(ret['flags'])))
+            ret.update({'structName':"OculusSimpleFireMessage2"})
+
+        elif curMsg == "messageSimplePingResult":
+            st = bpStructs['structs']["OculusSimplePingResult2"]
+
+            ret = parseStruct(payload[:st['sizeof']], st)
+            
+            ret.update({'structName':"OculusSimplePingResult2", 'plUsed':st['sizeof']})
+            print('------> recieved flags:', bin(np.uint8(ret['flags'])))
+            #import ipdb; ipdb.set_trace()
+        elif curMsg == "messagePingResult":
+            pass
+
+        elif curMsg == 'messageDummy': #0xff
+            pass ##print('Dummy Message')
+
+        else:
+            print( '--> ', header['msgId'] )
+            print( '---> ', curMsg )
+            import ipdb; ipdb.set_trace()
+        
+        print('<>%s<>'%curMsg, ret)
+
+    elif header['msgId'] == 0x80:
+        # user data
+        data = payload[16:].decode()
+        for line in data.strip().split('\n'):
+            print(line)
+        ret = header
+    else:
+        pass
+        ##print('unknown msg...')
+        #import ipdb; ipdb.set_trace()
+
     return ret
 
 
@@ -100,7 +206,18 @@ if __name__ == "__main__":
 
             # stage 2 - wait for sonar init message....
             while True:
-                
+
+                userConfigMsg = bpStructs['structs']['OculusUserConfig']
+                userConfigMsg['attributes']['ipAddr']['value']      = 0
+                userConfigMsg['attributes']['ipMask']['value']      = 0
+                userConfigMsg['attributes']['dhcpEnanle']['value']  = 0
+
+                toSend = packMsg(userConfigMsg)
+                M1200dTcpSock.sendall(toSend)
+
+                toSend = createOculusSimpleFireMessage2()
+                M1200dTcpSock.sendall(toSend)
+
                 sonData = handleOculusMsg(M1200dTcpSock, initServerMsgId)
 
                 if sonData is not None and sonData["msgId"] == initServerMsgId:
