@@ -102,7 +102,7 @@ def structParseByHeader(payload):
     ret = None
     #print('cur msgId =', header['msgId'])
     if header['msgId'] in bpStructs['enums']['OculusMessageType']['revFields'].keys():
-        curMsg = bpStructs['enums']['OculusMessageType']['revFields'][header['msgId']]
+        curMsg = bpStructs['menums']['OculusMessageType']['revFields'][header['msgId']]
         if curMsg == "messageUserConfig":
             # not relevant... for parsing data (pc->sonar case...)
             payload = payload[headerSize: ]
@@ -204,7 +204,7 @@ if __name__ == "__main__":
         if M1200dTcpSock is not None:
             initServerMsgId = 0x80
 
-            # stage 2 - wait for sonar init message.... (0x80)
+            # stage 2 - wait for sonar init message....
             while True:
 
                 userConfigMsg = bpStructs['structs']['OculusUserConfig']
