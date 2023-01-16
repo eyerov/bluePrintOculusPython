@@ -205,6 +205,7 @@ if __name__ == "__main__":
             initServerMsgId = 0x80
 
             # stage 2 - wait for sonar init message.... (0x80)
+
             while True:
 
                 userConfigMsg = bpStructs['structs']['OculusUserConfig']
