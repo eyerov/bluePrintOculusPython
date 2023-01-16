@@ -38,64 +38,59 @@ def packMsg(st):
     return packed
 
 
-def createOculusSimpleFireMessage2(flags = 25, rangePercent=12, gainPercent=60.0), gammaCorrection=0xff:
+def createOculusSimpleFireMessage2(oculusId, dstDeviceId, flags = 25, rangePercent=12, gainPercent=60.0), gammaCorrection=0xff:
     st = bpStructs['structs']['OculusSimpleFireMessage2']
     attributes = st['attributes']
 
-    attributes['oculusId'] =  20307, 
-    attributes['srcDeviceId'] =  0
-    attributes['dstDeviceId'] =  17936
-    attributes['msgId'] =  21
-    attributes['msgVersion'] =  2
-    attributes['payloadSize'] =  73
-    attributes['spare2_'] =  0
-    attributes['masterMode'] =  1
-    attributes['pingRate'] =  1
-    attributes['networkSpeed'] =  100
+    attributes['oculusId']        =  oculusId
+    attributes['srcDeviceId']     =  0
+    attributes['dstDeviceId']     =  dstDeviceId
+    attributes['msgId']           =  21
+    attributes['msgVersion']      =  2
+    attributes['payloadSize']     =  73
+    attributes['spare2_']         =  0
+    attributes['masterMode']      =  1
+    attributes['pingRate']        =  1
+    attributes['networkSpeed']    =  100
     attributes['gammaCorrection'] =  gammaCorrection
-    attributes['flags'] =  flags
-    attributes['rangePercent'] =  rangePercent
-    attributes['gainPercent'] =  gainPercent
-    attributes['speedOfSound'] =  0.0
-    attributes['salinity'] =  0.0
-    attributes['extFlags'] =  4
-    attributes['reserved_0'] =  0
-    attributes['reserved_1'] =  0
-    attributes['reserved_2'] =  0
-    attributes['reserved_3'] =  0
-    attributes['reserved_4'] =  0
-    attributes['reserved_5'] =  0
-    attributes['reserved_6'] =  0
-    attributes['reserved_7'] =  0
+    attributes['flags']           =  flags
+    attributes['rangePercent']    =  rangePercent
+    attributes['gainPercent']     =  gainPercent
+    attributes['speedOfSound']    =  0.0
+    attributes['salinity']        =  0.0
+    attributes['extFlags']        =  4
+    attributes['reserved_0']      =  0
+    attributes['reserved_1']      =  0
+    attributes['reserved_2']      =  0
+    attributes['reserved_3']      =  0
+    attributes['reserved_4']      =  0
+    attributes['reserved_5']      =  0
+    attributes['reserved_6']      =  0
+    attributes['reserved_7']      =  0
 
     ret = packMsg(st)
     return ret
 
 
 
-def getStatusMsg(sock, T=0.01):
+def getStatusMsg(sock, T=0.01): # UDP
 
     statusHeaderSize = 16
-    recvSock = select([sock], [], [], T)[0]
     ret = None
 
     statusSize = bpStructs['structs']['OculusStatusMsg']['sizeof']
     stStatus   = bpStructs['structs']['OculusStatusMsg']
 
+    recvSock = select([sock], [], [], T)[0]
+
     if len(recvSock) > 0:
-        ret = {}
         data = sock.recvfrom(64*1024)
         
         status = parseStruct(data[0], stStatus)
         
-        status["ipAddr"]            = socket.inet_ntoa(struct.pack("I", tmp[0]))
-        status["ipMask"]            = socket.inet_ntoa(struct.pack("I", tmp[1]))
-        payloadSize = pos+(3*4+6+9*8)-statusHeaderSize
-        if hdr["payloadSize"] != payloadSize:
-            print('missing status data....')
-        
-        ret['verInfo']= verInfo
-        ret['status'] = status
+        status["ipAddr"]            = socket.inet_ntoa(struct.pack("I", status["ipAddr"]))
+        status["ipMask"]            = socket.inet_ntoa(struct.pack("I", status["ipMask"]))
+        ret = status
         
     return ret
 
@@ -181,12 +176,16 @@ if __name__ == "__main__":
         # get sonar status, as sonar init procedure...
         statusTic = time.time()
         statusCnt = 0.0
+
+        oculusId = -1
+        dstDeviceId = -1
         # stage 1 - get sonar IP addr
         while True:
             
             status = getStatusMsg(udpStatusSock)
             if status is not None:
                 statusCnt += 1
+                
             if time.time() - statusTic >= 3:
                 sps = statusCnt/(time.time()-statusTic)
                 print("Status rate: %0.2fHz"%sps)
@@ -195,6 +194,8 @@ if __name__ == "__main__":
             
             if (status is not None) and ('ipAddr' in status['status'].keys()):
                 print("Initiate Tcp connection to: %s "%status['status']['ipAddr'])
+                oculusId = status['oculusId']
+                dstDeviceId = status['srcDeviceId']
                 M1200dTcpSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 M1200dTcpSock.connect( ("%s" %status['status']['ipAddr'], tcpPort) )
                 break
@@ -202,9 +203,8 @@ if __name__ == "__main__":
         # Handle sonar data
         if M1200dTcpSock is not None:
             initServerMsgId = 0x80
-            simpleFireMsg2 = createOculusFireMsg(status['hdr'] )
 
-            # stage 2 - wait for sonar init message....
+            # stage 2 - wait for sonar init message.... (0x80)
             while True:
 
                 userConfigMsg = bpStructs['structs']['OculusUserConfig']
@@ -215,7 +215,7 @@ if __name__ == "__main__":
                 toSend = packMsg(userConfigMsg)
                 M1200dTcpSock.sendall(toSend)
 
-                toSend = createOculusSimpleFireMessage2()
+                toSend = createOculusSimpleFireMessage2(oculusId, dstDeviceId)
                 M1200dTcpSock.sendall(toSend)
 
                 sonData = handleOculusMsg(M1200dTcpSock, initServerMsgId)
