@@ -69,6 +69,7 @@ def parseSimpleFire2(payload):
 
 
 def getStructFields(st):
+    import ipdb; ipdb.set_trace()
     packStr = ''
     kkkk = []
     msgLen = 0
@@ -140,23 +141,14 @@ def structParseByHeader(payload):
         elif curMsg == "messageSimplePingResult":
             st = bpStructs['structs']["OculusSimplePingResult2"]
 
-            ret = {}
-            dd = struct.unpack(st['packString'], payload[:st['sizeof']])
-            pStr,keys, ll = getStructFields(st)
+            ret = parseStruct(payload[:st['sizeof']], st)
             
-            for idx, key in enumerate(keys):
-                if key in ret.keys():
-                    key = key+'_'
-                ret[key] = dd[idx]
-            #print('--->', len(dd), len(ret.keys()))
             ret.update({'structName':"OculusSimplePingResult2", 'plUsed':st['sizeof']})
             print('------> recieved flags:', bin(np.uint8(ret['flags'])))
             #import ipdb; ipdb.set_trace()
         elif curMsg == "messagePingResult":
-            paass
+            pass
 
-
-        
         elif curMsg == 'messageDummy': #0xff
             pass ##print('Dummy Message')
 
@@ -169,7 +161,9 @@ def structParseByHeader(payload):
 
     elif header['msgId'] == 0x80:
         # user data
-        print(payload)    
+        data = payload[16:].decode()
+        for line in data.strip().split('\n'):
+            print(line)
     else:
         pass
         ##print('unknown msg...')
@@ -223,7 +217,7 @@ def process_pcap(file_name):
             statusSize = bpStructs['structs']['OculusStatusMsg']['sizeof']
             stStatus   = bpStructs['structs']['OculusStatusMsg']
             if len(data) == 142:
-                status     = parseStruct(data, stStatus)
+                status = parseStruct(data, stStatus)
 
                 print( socket.inet_ntoa(struct.pack("<I", status['ipMask'])) )
                 print( socket.inet_ntoa(struct.pack("<I", status['ipAddr'])) )
@@ -241,24 +235,28 @@ def process_pcap(file_name):
         if (ip_pkt.src == client_ip) and (ip_pkt.dst == server_ip):
             ## PC -> Sonar
             if payloadLen > 0:
+                print('-start'*10, '--- PC->Sonar')
                 payload = ip_pkt.payload['Raw'].fields['load']
                 ##print('-req->'*14, len(payload)) #, payload)
                 request = structParseByHeader(payload)
 
                 print('!!<>!!<>'*5, request)
-                
+                print('-end'*10, '--- PC->Sonar')
             else:
                 #sync msgs (?)
                 ##print('empty REQ')
                 continue
             
+            
         elif (ip_pkt.src == server_ip) and (ip_pkt.dst == client_ip):
             ## Sonar -> pc
-             
+            
             if payloadLen > 0:
+                print('-start'*10, '--- Sonar->PC')
                 payload = ip_pkt.payload['Raw'].fields['load']
 
                 if imStarted:
+                    print('part of im...')  
                     imData += payload
                     sumData = len(imData)
                     ##print('sum Data =', sumData)
@@ -277,6 +275,7 @@ def process_pcap(file_name):
                 data = structParseByHeader(payload)
                 
                 if data is not None:
+                    print('start of im...')
                     if data['structName'] == "OculusSimplePingResult2":
                         w               = data['nBeams']
                         h               = data['nRanges']
@@ -295,11 +294,12 @@ def process_pcap(file_name):
                 else:
                     pass
                     #print("getting image...")
-
+                print('-end'*10, '--- Sonar->PC')
             else:
                 #sync msgs (?)
                 ##print('empty RESP')
                 continue
+            
         else:
             print('src IP: %s ---- dst IP: %s'%(ip_pkt.src, ip_pkt.dst))
             print('not in the game...')
