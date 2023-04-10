@@ -244,6 +244,7 @@ def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, ran
 
 
 def setUserConfigMsg(pingRate=0x01, gammaCorrection=0xff, range=12.0, gainVal=60.0, sOs=0, salinity=0 ):
+    #not in use
 
     st = bpStructs['structs']['OculusSimpleFireMessage2']
     st['attributes']['oculusId'       ]['value'] = 20307
