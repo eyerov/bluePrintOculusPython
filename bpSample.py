@@ -61,14 +61,14 @@ if __name__ == "__main__":
         if M1200dTcpSock is not None:
             
             # init sonar values
-            nBins       = 256
-            pingRate    = 10        #[Hz] 
+        nBins               = 256
+            pingRate        = 10    #[Hz] 
             gammaCorrection = 0xff  # 0xff -> 1
-            range = 12              # [m]
-            gainVal = 60            # [%]
-            sOs = 0                 # [m/s], speed of sound, 0->precalculated
-            salinity = 0            # ? (pps}
-            is16Bit = False
+            range           = 12    # [m]
+            gainVal         = 60    # [%]
+            sOs             = 0     # [m/s], speed of sound, 0->precalculated
+            salinity        = 0     # ? (pps}
+            is16Bit         = False
 
 
             simpleFireMsg2 = bpHandler.createOculusFireMsg(status['hdr'], 
