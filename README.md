@@ -24,7 +24,7 @@ manual:
 
         TBD...
         
-While running the script the first time, it will create "oculus_h.pkl" which hold all the given structs deifed in oculus.h ready to use in python (include the packing string and sizes).
+While running the script the first time, it will create "oculus_h.pkl" which hold all the given structs defined in oculus.h ready to use in python (include the packing string and sizes).
 
 (*) while building that parser I used wireshark to record some transmission between sonar an the PC that halped me understand how to better control the sonar the recorder parser (yen not that perfect but with some crunching you can use it...) and some transimission records are also provided in that repo.
 
