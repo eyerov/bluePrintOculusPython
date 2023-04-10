@@ -57,7 +57,21 @@ def handleOculusMsg(sock):
 
 
 if __name__ == "__main__":
-    
+    usege = """usage:\n  
+    while sonar image is on scope you can do the following actions:
+        press 'h' to get 512 beams
+        press 'n' to get 256 beams
+        press 'r' to increase sonar range by 0.5 [m]
+        press 'f' to decrease sonar range by -0.5 [m]
+        press 'g' to increase gain percentage by 1[%]
+        press 'b' to increase gain percentage by 1[%]
+        press 'z' to sample 16bit image (it provide 8bit streched image, but at the handler you will have the 16bit)
+
+        TBD..."""
+
+    print(usege)
+
+   
     winName = 'sonData'
     cv2.namedWindow(winName, 0)
 
@@ -164,7 +178,7 @@ if __name__ == "__main__":
                     elif key==ord('q') or key == 27:
                         print('exit')
                         break 
-                    
+
                     
                     if doCahngeStatus:
                         doCahngeStatus = False 
