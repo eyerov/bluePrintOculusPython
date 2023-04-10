@@ -348,6 +348,42 @@ def structParseByHeader(payload):
     return ret
     
 
+def handleOculusMsg(sock):
+    
+    recvSock = select([sock], [], [], 0.05)[0]
+    ret = None
+    if len(recvSock) > 0:
+        
+        payload = bpHandler.recvall(sock) 
+        metaData = bpHandler.structParseByHeader(payload)
+        
+        if metaData is not None:
+            if metaData['structName'] == "OculusSimplePingResult":
+
+                bpSonarData = bpHandler.bpSonarData()
+                bpSonarData.initSonarData(metaData, payload)
+                
+                while not bpSonarData.isImageReady():
+                    recvSock = select([sock], [], [], 0.05)[0]
+                    if len(recvSock) > 0:
+                        payload = bpHandler.recvall(sock) 
+                        bpSonarData.addSonarData(payload)
+                    
+                ret = bpSonarData.getSonarData()
+
+            elif metaData["msgId"] == 0x80: #user data, text...
+                ret = [metaData]
+                
+                
+            elif data["msgId"] == 0xff:
+                print('dummy msg...')
+            
+            else:
+                print('mmmm msg...')
+            
+    return ret
+
+
 
 class bpSonarData():
     def __init__(self):

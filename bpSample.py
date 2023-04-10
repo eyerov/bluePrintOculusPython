@@ -1,59 +1,10 @@
 import numpy as np
 import os
 import zmq
-from select import select
 import socket
 import time
-import struct
 import bpHandler
 import cv2
-
-import pickle
-if not os.path.exists("oculus_h.pkl"):
-    import bpStructs as bpcs
-    bpcs.saveStructs2Pkl()
-    bpStructs = bpcs.getBpStruct()
-else:
-    with open("oculus_h.pkl", 'rb') as fid:
-        bpStructs = pickle.load(fid)
-
-
-bpSonarData = bpHandler.bpSonarData()
-
-def handleOculusMsg(sock):
-    
-    recvSock = select([sock], [], [], 0.05)[0]
-    ret = None
-    if len(recvSock) > 0:
-        
-        payload = bpHandler.recvall(sock) 
-        metaData = bpHandler.structParseByHeader(payload)
-        
-        if metaData is not None:
-            if metaData['structName'] == "OculusSimplePingResult":
-                
-                bpSonarData.initSonarData(metaData, payload)
-                while not bpSonarData.isImageReady():
-                    recvSock = select([sock], [], [], 0.05)[0]
-                    if len(recvSock) > 0:
-                        payload = bpHandler.recvall(sock) 
-                        bpSonarData.addSonarData(payload)
-                    
-                ret = bpSonarData.getSonarData()
-
-            elif metaData["msgId"] == 0x80: #user data, text...
-                ret = [metaData]
-                
-                
-            elif data["msgId"] == 0xff:
-                print('dummy msg...')
-            
-            else:
-                print('mmmm msg...')
-            
-    return ret
-    
-
 
 
 if __name__ == "__main__":
@@ -85,7 +36,7 @@ if __name__ == "__main__":
         context = zmq.Context()
         M1200dTcpSock = None
 
-        # get sonar status, as sonar init procedure...
+        # get sonar status (and ip), as sonar init procedure...
         statusTic = time.time()
         statusCnt = 0.0
         while True:
@@ -108,8 +59,27 @@ if __name__ == "__main__":
         
         # Handle sonar data
         if M1200dTcpSock is not None:
-            initServerMsgId = 0x80
-            simpleFireMsg2 = bpHandler.createOculusFireMsg( status['hdr'] )
+            
+            # init sonar values
+            nBins       = 256
+            pingRate    = 10        #[Hz] 
+            gammaCorrection = 0xff  # 0xff -> 1
+            range = 12              # [m]
+            gainVal = 60            # [%]
+            sOs = 0                 # [m/s], speed of sound, 0->precalculated
+            salinity = 0            # ? (pps}
+            is16Bit = False
+
+
+            simpleFireMsg2 = bpHandler.createOculusFireMsg(status['hdr'], 
+                                                    nBins, 
+                                                    pingRate,
+                                                    gammaCorrection, 
+                                                    range,
+                                                    gainVal,
+                                                    sOs,
+                                                    salinity,
+                                                    is16Bit)
 
             pingTic = time.time()
             pingCnt = 0.0
@@ -117,24 +87,15 @@ if __name__ == "__main__":
             #userConfig = bpHandler.setUserConfigMsg(pingRate=0x01)
             #M1200dTcpSock.send(userConfig)
 
-            nBins       = 256
-            pingRate    = 10 
-            gammaCorrection = 0xff 
-            range = 12  # [m]
-            gainVal = 60 # [%]
-            sOs = 0 # [m/s], speed of sound, 0->precalculated
-            salinity = 0 # ?
-
             doCahngeStatus = False
             nBeams = -1
             nRanges = -1
-            is16Bit = False
 
             
             while True:
                 time.sleep(0.001)
                 M1200dTcpSock.sendall(simpleFireMsg2)
-                sonData = handleOculusMsg(M1200dTcpSock)
+                sonData = bpHandler.handleOculusMsg(M1200dTcpSock)
                 
                 if sonData is not None and sonData[0]['msgId']==0x23:
                     pingCnt += 1
