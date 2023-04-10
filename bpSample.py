@@ -61,7 +61,7 @@ if __name__ == "__main__":
         if M1200dTcpSock is not None:
             
             # init sonar values
-        nBins               = 256
+            nBins           = 256
             pingRate        = 10    #[Hz] 
             gammaCorrection = 0xff  # 0xff -> 1
             range           = 12    # [m]
