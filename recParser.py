@@ -19,7 +19,9 @@ else:
 
 
 #fileName = r'wiresharkRec/oculus.pcapng'
-fileName = r'wiresharkRec/oculus_dynamic_change_range.pcapng'
+#fileName = r'wiresharkRec/oculus_dynamic_change_range.pcapng'
+fileName = r'wiresharkRec/oculus_512beams_rangeChange.pcapng'
+#fileName = r'wiresharkRec/oculus_noChange.pcapng'
 with open("oculus_h.pkl", 'rb') as fid:
     bpStructs = pickle.load(fid)
 
@@ -59,7 +61,7 @@ def parseSimpleFire2(payload):
             print('Dummy Message')
         else:
             print('msg...')
-            import ipdb; ipdb.set_trace()
+            #import ipdb; ipdb.set_trace()
 
     elif header['msgId'] == 0x80:
         print(payload)    
@@ -113,7 +115,7 @@ def structParseByHeader(payload):
     headerSize = bpStructs['structs']['OculusMessageHeader']['sizeof']
     header = parseStruct(payload[:headerSize], bpStructs['structs']['OculusMessageHeader'])
     
-
+    #print('--->>', len(payload))
     ret = None
     #print('cur msgId =', header['msgId'])
     if header['msgId'] in bpStructs['enums']['OculusMessageType']['revFields'].keys():
@@ -123,6 +125,7 @@ def structParseByHeader(payload):
             payload = payload[headerSize: ]
             ret = parseStruct(payload, bpStructs['structs']["OculusUserConfig"])
             ret.update({'structName':"OculusUserConfig"})
+            
 
         elif curMsg == "messageSimpleFire":
             st = bpStructs['structs']["OculusSimpleFireMessage2"]
@@ -137,6 +140,9 @@ def structParseByHeader(payload):
             ret = parseStruct(payload, st) #, packStr=packString)
             print('------> send flags:', bin(np.uint8(ret['flags'])))
             ret.update({'structName':"OculusSimpleFireMessage2"})
+            print('---1---') 
+            #import ipdb; ipdb.set_trace()
+            
 
         elif curMsg == "messageSimplePingResult":
             st = bpStructs['structs']["OculusSimplePingResult2"]
@@ -145,6 +151,7 @@ def structParseByHeader(payload):
             
             ret.update({'structName':"OculusSimplePingResult2", 'plUsed':st['sizeof']})
             print('------> recieved flags:', bin(np.uint8(ret['flags'])))
+            print('---2---') 
             #import ipdb; ipdb.set_trace()
         elif curMsg == "messagePingResult":
             pass
@@ -155,7 +162,7 @@ def structParseByHeader(payload):
         else:
             print( '--> ', header['msgId'] )
             print( '---> ', curMsg )
-            import ipdb; ipdb.set_trace()
+            #import ipdb; ipdb.set_trace()
         
         print('<>%s<>'%curMsg, ret)
 
@@ -177,7 +184,7 @@ cv2.namedWindow('aa', 0)
 def process_pcap(file_name):
     print('Opening {}...'.format(file_name))
 
-    client = '169.254.99.25:54375'
+    client = '169.254.70.88:54375'
     server = '169.254.70.16:52100'
 
     (client_ip, client_port) = client.split(':')
@@ -240,8 +247,10 @@ def process_pcap(file_name):
                 ##print('-req->'*14, len(payload)) #, payload)
                 request = structParseByHeader(payload)
 
+                #import ipdb; ipdb.set_trace()
                 print('!!<>!!<>'*5, request)
                 print('-end'*10, '--- PC->Sonar')
+                #import ipdb; ipdb.set_trace()
             else:
                 #sync msgs (?)
                 ##print('empty REQ')
@@ -252,16 +261,18 @@ def process_pcap(file_name):
             ## Sonar -> pc
             
             if payloadLen > 0:
-                print('-start'*10, '--- Sonar->PC')
+                ##print('-start'*10, '--- Sonar->PC')
                 payload = ip_pkt.payload['Raw'].fields['load']
 
                 if imStarted:
-                    print('part of im...')  
+                    #print('part of im...')  
                     imData += payload
                     sumData = len(imData)
                     ##print('sum Data =', sumData)
                     #if sumData > offset+w*h:
                     if sumData > mSize:
+                        print('-->', offset, w, h)
+
                         img = np.frombuffer(imData[offset:offset+w*h], dtype='uint8').reshape((h, w))
                         #import ipdb; ipdb.set_trace()
                         cv2.imshow('aa', img);
@@ -275,8 +286,8 @@ def process_pcap(file_name):
                 data = structParseByHeader(payload)
                 
                 if data is not None:
-                    print('start of im...')
                     if data['structName'] == "OculusSimplePingResult2":
+                        print('start of im...')
                         w               = data['nBeams']
                         h               = data['nRanges']
                         offset          = data['imageOffset']
@@ -286,6 +297,7 @@ def process_pcap(file_name):
                         pl = payload##[data['plUsed']:]
 
                         beamsDeg = np.frombuffer(pl[metaDataSize:metaDataSize+w*2], dtype=np.short)
+                        #import ipdb; ipdb.set_trace()
                         imData += pl[data['nBeams']*2:]
                         sumData = len(imData)
                         imSize = data['imageSize']
@@ -294,7 +306,7 @@ def process_pcap(file_name):
                 else:
                     pass
                     #print("getting image...")
-                print('-end'*10, '--- Sonar->PC')
+                ##print('-end'*10, '--- Sonar->PC')
             else:
                 #sync msgs (?)
                 ##print('empty RESP')
