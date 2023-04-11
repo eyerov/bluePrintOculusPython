@@ -275,6 +275,7 @@ def process_pcap(file_name):
 
                         img = np.frombuffer(imData[offset:offset+w*h], dtype='uint8').reshape((h, w))
                         #import ipdb; ipdb.set_trace()
+                        cv2.imwrite('input.jpg', img)
                         cv2.imshow('aa', img);
                         cv2.waitKey(0)
                         imStarted = False

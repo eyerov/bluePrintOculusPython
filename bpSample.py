@@ -62,12 +62,12 @@ if __name__ == "__main__":
             
             # init sonar values
             nBins           = 256
-            pingRate        = 10    #[Hz] 
-            gammaCorrection = 0xff  # 0xff -> 1
-            range           = 12    # [m]
+            pingRate        = 15    #[Hz] 
+            gammaCorrection = 0xff  # 0xff -> 1 byte (0-255)
+            range           = 12    # [m] # in wide aperature up to 40[m], in narrow, up to 10[m]
             gainVal         = 60    # [%]
             sOs             = 0     # [m/s], speed of sound, 0->precalculated
-            salinity        = 0     # ? (pps}
+            salinity        = 0     # ? (ppt}
             is16Bit         = False
 
 
@@ -91,13 +91,18 @@ if __name__ == "__main__":
             nBeams = -1
             nRanges = -1
 
+            dt = 5
+            tic = time.time()-dt
             
             while True:
                 time.sleep(0.001)
-                M1200dTcpSock.sendall(simpleFireMsg2)
+                if time.time() - tic >= dt:
+                    print('sending...')
+                    M1200dTcpSock.sendall(simpleFireMsg2)
+                    tic = time.time()
                 sonData = bpHandler.handleOculusMsg(M1200dTcpSock)
                 
-                if sonData is not None and sonData[0]['msgId']==0x23:
+                if sonData is not None and (sonData[0]['msgId']==0x23 or sonData[0]['msgId']==0x22):
                     pingCnt += 1
                     nBeams = sonData[0]["nBeams"]
                     nRanges = sonData[0]["nRanges"]

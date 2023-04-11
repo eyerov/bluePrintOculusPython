@@ -181,9 +181,11 @@ def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, ran
                 2:0x04 }
     if pingRate not in pingRateDict:
         print("wrong ping rate...")
-        return None
+        pingRate        = pingRateDict[10]  #type: uint8_t
+    else:
+        pingRate        = pingRateDict[pingRate]  #type: uint8_t
 
-    pingRate        = pingRateDict[pingRate]  #type: uint8_t
+    
     networkSpeed    = 0xff  # type uint8_t; The max network speed in Mbs , set to 0x00 or 0xff to use link speed
     gammaCorrection = gammaCorrection  # type uint8_t; 0 and 0xff = gamma correction = 1.0
 
@@ -229,7 +231,7 @@ def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, ran
                                   payloadSize,
                                   hdr["spare2"])
     
-    ret += struct.pack('<BBBBB'+'d'*4, masterMode, 
+    ret += struct.pack('<' + 'B'*5 + 'd'*4, masterMode, 
                                        pingRate, 
                                        networkSpeed,
                                        gammaCorrection, 
@@ -335,10 +337,13 @@ def structParseByHeader(payload):
 
     elif header['msgId'] == 0x80:
         # user data
-        #data = payload[16:].decode()
-        #for line in data.strip().split('\n'):
-        #    print(line)
-        header['structName'] = 'serverInit'
+        try:
+            data = payload[16:].decode()
+            for line in data.strip().split('\n'):
+                print(line)
+            header['structName'] = 'serverInit'
+        except:
+            pass
         ret = header
     else:
         pass
@@ -346,43 +351,6 @@ def structParseByHeader(payload):
         #import ipdb; ipdb.set_trace()
 
     return ret
-    
-
-def handleOculusMsg(sock):
-    
-    recvSock = select([sock], [], [], 0.05)[0]
-    ret = None
-    if len(recvSock) > 0:
-        
-        payload = bpHandler.recvall(sock) 
-        metaData = bpHandler.structParseByHeader(payload)
-        
-        if metaData is not None:
-            if metaData['structName'] == "OculusSimplePingResult":
-
-                bpSonarData = bpHandler.bpSonarData()
-                bpSonarData.initSonarData(metaData, payload)
-                
-                while not bpSonarData.isImageReady():
-                    recvSock = select([sock], [], [], 0.05)[0]
-                    if len(recvSock) > 0:
-                        payload = bpHandler.recvall(sock) 
-                        bpSonarData.addSonarData(payload)
-                    
-                ret = bpSonarData.getSonarData()
-
-            elif metaData["msgId"] == 0x80: #user data, text...
-                ret = [metaData]
-                
-                
-            elif data["msgId"] == 0xff:
-                print('dummy msg...')
-            
-            else:
-                print('mmmm msg...')
-            
-    return ret
-
 
 
 class bpSonarData():
@@ -391,8 +359,6 @@ class bpSonarData():
 
         self.imData = b''
         self.sumData = 0
-
-        self.debug = False
 
         self.w              = -1
         self.h              = -1
@@ -434,22 +400,20 @@ class bpSonarData():
 
         pl = data##[data['plUsed']:]
         self.beamsDeg = np.frombuffer(pl[self.metaDataSize:self.metaDataSize+self.w*2], dtype=np.short)/100.0
-        self.metaData['beamsDeg'] = beamsDeg
+        
+        self.metaData['beamsDeg'] = self.beamsDeg
 
         self.imData += pl[metaData['nBeams']*2:]
         self.sumData += len(self.imData)
         self.imSize = metaData['imageSize']
 
-        if self.debug:
-            self.winName = 'sonData'
-            cv2.namedWindow(self.winName, 0)
-    
+        
     def addSonarData(self, payload):
 
         self.imData += payload
         self.sumData = len(self.imData)
         ##print('sum Data =', sumData)
-        if self.sumData > self.mSize:
+        if self.sumData >= self.mSize:
             #print('--->', self.offset, self.w, self.h, '<-->', 1524 +11)
 
             if self.is16Bit:
@@ -477,14 +441,8 @@ class bpSonarData():
                     self.offset = self.w*3-1
                 tmp = np.frombuffer(self.imData[self.offset:self.offset+(self.w+dW)*self.h], dtype='uint8').reshape((self.h, self.w+dW))
                 self.sonarImg = tmp[:,wo:].astype('uint8')
-            
-            if self.debug:
-                cv2.imshow(self.winName, self.sonarImg)
-                cv2.waitKey(10)
-            
+                
             self.imReady        = True
-            self.doneRecieving  = True
-
             #import ipdb; ipdb.set_trace()
     
     def isImageReady(self):
@@ -495,3 +453,40 @@ class bpSonarData():
             return self.metaData, self.sonarImg
         return None
             
+
+bpSonarData = bpSonarData()
+
+def handleOculusMsg(sock):
+    
+    recvSock = select([sock], [], [], 0.05)[0]
+    ret = None
+    if len(recvSock) > 0:
+        
+        payload = recvall(sock) 
+        metaData = structParseByHeader(payload)
+        
+        if metaData is not None:
+            if metaData['structName'] == "OculusSimplePingResult":
+
+                
+                bpSonarData.initSonarData(metaData, payload)
+                
+                while not bpSonarData.isImageReady():
+                    recvSock = select([sock], [], [], 0.05)[0]
+                    if len(recvSock) > 0:
+                        payload = recvall(sock) 
+                        bpSonarData.addSonarData(payload)
+                    
+                ret = bpSonarData.getSonarData()
+
+            elif metaData["msgId"] == 0x80: #user data, text...
+                ret = [metaData]
+                
+                
+            elif data["msgId"] == 0xff:
+                print('dummy msg...')
+            
+            else:
+                print('mmmm msg...')
+            
+    return ret
