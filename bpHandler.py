@@ -402,47 +402,57 @@ class bpSonarData():
         self.beamsDeg = np.frombuffer(pl[self.metaDataSize:self.metaDataSize+self.w*2], dtype=np.short)/100.0
         
         self.metaData['beamsDeg'] = self.beamsDeg
+        self.imData = pl
 
-        self.imData += pl[metaData['nBeams']*2:]
         self.sumData += len(self.imData)
         self.imSize = metaData['imageSize']
 
+        if self.sumData >= self.imSize:
+            try:
+                self.extractImage()
+            except:
+                import traceback
+                traceback.print_exc()
+
+    def extractImage(self):
+        if self.is16Bit:
+                if self.w == 256:
+                    #self.offset = self.w*4-2
+                    dW = 2
+                elif self.w == 512:
+                    #not possible....
+                    self.offset = self.w*2-2
+                    dW = 2
+                tmp = np.frombuffer(self.imData[self.offset:self.offset+(self.w+dW)*self.h*2], dtype='uint16').reshape((self.h, self.w+dW))
+                tmp = tmp[:,dW:-1]
+                tmp = tmp-np.min(tmp)
+                self.sonarImg = ( tmp/np.max(tmp) * 255 ).astype('uint8')
+        else:
+            if self.w == 256:
+                dW = 4
+                #self.offset = self.w*6-1 #1524 +11
+            elif self.w == 512:
+                #pass
+                dW = 4
+                #self.offset = self.w*3-1
+            
+            tmp = np.frombuffer(self.imData[self.offset:self.offset+(self.w+dW)*self.h], dtype='uint8').reshape((self.h, self.w+dW))
+            self.sonarImg = tmp[:,dW:].astype('uint8')
+        #print('--->', self.sonarImg.shape, self.w, self.h, self.offset, self.is16Bit)
+            
+        self.imReady        = True
         
     def addSonarData(self, payload):
 
         self.imData += payload
         self.sumData = len(self.imData)
         ##print('sum Data =', sumData)
-        if self.sumData >= self.mSize:
-            #print('--->', self.offset, self.w, self.h, '<-->', 1524 +11)
-
-            if self.is16Bit:
-                if self.w == 256:
-                    self.offset = self.w*4-2
-                    dW = 2
-                    wo = 2
-                elif self.w == 512:
-                    #not possible....
-                    self.offset = self.w*2-2
-                    dW = 2
-                    wo = 3
-                tmp = np.frombuffer(self.imData[self.offset:self.offset+(self.w+dW)*self.h*2], dtype='uint16').reshape((self.h, self.w+dW))
-                tmp = tmp[:,wo:-1]
-                tmp = tmp-np.min(tmp)
-                self.sonarImg = ( tmp/np.max(tmp) * 255 ).astype('uint8')
-            else:
-                if self.w == 256:
-                    dW = 4
-                    wo = 4
-                    self.offset = self.w*6-1 #1524 +11
-                elif self.w == 512:
-                    dW = 4
-                    wo = 7
-                    self.offset = self.w*3-1
-                tmp = np.frombuffer(self.imData[self.offset:self.offset+(self.w+dW)*self.h], dtype='uint8').reshape((self.h, self.w+dW))
-                self.sonarImg = tmp[:,wo:].astype('uint8')
-                
-            self.imReady        = True
+        if self.sumData >= self.imSize:
+            try:
+                self.extractImage()
+            except:
+                import traceback
+                traceback.print_exc()
             #import ipdb; ipdb.set_trace()
     
     def isImageReady(self):

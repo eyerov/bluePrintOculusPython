@@ -91,13 +91,12 @@ if __name__ == "__main__":
             nBeams = -1
             nRanges = -1
 
-            dt = 5
+            dt = 0.5
             tic = time.time()-dt
             
             while True:
                 time.sleep(0.001)
                 if time.time() - tic >= dt:
-                    print('sending...')
                     M1200dTcpSock.sendall(simpleFireMsg2)
                     tic = time.time()
                 sonData = bpHandler.handleOculusMsg(M1200dTcpSock)
