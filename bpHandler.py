@@ -466,7 +466,7 @@ def handleOculusMsg(sock):
         metaData = structParseByHeader(payload)
         
         if metaData is not None:
-            if metaData['structName'] == "OculusSimplePingResult":
+            if metaData["msgId"] == 0x23: #metaData['structName'] == "OculusSimplePingResult":
 
                 
                 bpSonarData.initSonarData(metaData, payload)
@@ -483,10 +483,10 @@ def handleOculusMsg(sock):
                 ret = [metaData]
                 
                 
-            elif data["msgId"] == 0xff:
+            elif metaData["msgId"] == 0xff:
                 print('dummy msg...')
             
             else:
-                print('mmmm msg...')
+                print('mmmm msg...', metaData["msgId"])
             
     return ret
