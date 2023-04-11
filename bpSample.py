@@ -157,6 +157,7 @@ if __name__ == "__main__":
                                                             sOs,
                                                             salinity,
                                                             is16Bit)
+                        M1200dTcpSock.sendall(simpleFireMsg2)
 
                     
                 if time.time() - pingTic >= 3:
