@@ -5,7 +5,7 @@ import socket
 import time
 import bpHandler
 import cv2
-
+import sonarDisplay 
 
 if __name__ == "__main__":
     usege = """usage:\n  
@@ -25,6 +25,8 @@ if __name__ == "__main__":
    
     winName = 'sonData'
     cv2.namedWindow(winName, 0)
+    ws = warpSonar()
+    warpIm = True
 
     try:    
         statusPort  = 52102
@@ -105,8 +107,12 @@ if __name__ == "__main__":
                     pingCnt += 1
                     nBeams = sonData[0]["nBeams"]
                     nRanges = sonData[0]["nRanges"]
+
+                    showIm = sonData[1]
+                    if warpIm:
+                        showIm = ws.warpSonarImage(sonData[0], sonData[1])
                     
-                    cv2.imshow(winName, sonData[1])
+                    cv2.imshow(winName, showIm)
                     key = cv2.waitKey(1)&0xff
                     if key==ord('h'):
                         print('set 512 bins')
