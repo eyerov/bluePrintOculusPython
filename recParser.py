@@ -202,6 +202,7 @@ def process_pcap(file_name):
     w = 256
     h = 199
     mSize = 999999
+    metadata = None
     
     for (pkt_data, pkt_metadata,) in RawPcapReader(file_name):
         count += 1
@@ -274,7 +275,9 @@ def process_pcap(file_name):
                         print('-->', offset, w, h)
 
                         img = np.frombuffer(imData[offset:offset+w*h], dtype='uint8').reshape((h, w))
-                        #import ipdb; ipdb.set_trace()
+                        
+                        with open('inData.pkl', 'wb') as fid:
+                            pickle.dump([metadata, img], fid)
                         cv2.imwrite('input.jpg', img)
                         cv2.imshow('aa', img);
                         cv2.waitKey(0)
@@ -303,6 +306,9 @@ def process_pcap(file_name):
                         sumData = len(imData)
                         imSize = data['imageSize']
                         imStarted = True
+
+                        metadata = data
+                        metadata.update({"beamsDeg":beamsDeg})
                         
                 else:
                     pass
