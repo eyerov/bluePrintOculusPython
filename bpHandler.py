@@ -160,7 +160,7 @@ def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, ran
     mode 2 - High Frequency Mode (narrow aperture, target identification)
     type: uint8_t
     '''
-    masterMode = 2 # type uint8_t
+    masterMode = 1 # type uint8_t
     '''
     enum PingRateType : uint8_t
     {
@@ -433,7 +433,9 @@ class bpSonarData():
         
 
         pl = data##[data['plUsed']:]
-        self.beamsDeg = np.frombuffer(pl[self.metaDataSize:self.metaDataSize+self.w*2], dtype=np.short)
+        self.beamsDeg = np.frombuffer(pl[self.metaDataSize:self.metaDataSize+self.w*2], dtype=np.short)/100.0
+        self.metaData['beamsDeg'] = beamsDeg
+
         self.imData += pl[metaData['nBeams']*2:]
         self.sumData += len(self.imData)
         self.imSize = metaData['imageSize']

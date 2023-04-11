@@ -296,7 +296,7 @@ def process_pcap(file_name):
 
                         pl = payload##[data['plUsed']:]
 
-                        beamsDeg = np.frombuffer(pl[metaDataSize:metaDataSize+w*2], dtype=np.short)
+                        beamsDeg = np.frombuffer(pl[metaDataSize:metaDataSize+w*2], dtype=np.short)/100
                         #import ipdb; ipdb.set_trace()
                         imData += pl[data['nBeams']*2:]
                         sumData = len(imData)
