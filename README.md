@@ -1,4 +1,5 @@
 # bluePrintOculusPython
+
 implementing blue print M1200d Sonar interface, pure python...
 
 this code is used to sample raw Sonar data to gather with its metadata.
@@ -20,11 +21,11 @@ manual:
         press 'g' to increase gain percentage by 1[%]
         press 'b' to increase gain percentage by 1[%]
         press 'z' to sample 16bit image (it provide 8bit streched image, but at the handler you will have the 16bit)
+        press 'a' to change aperture
 
-        TBD...
-        
+                
 While running the script the first time, it will create "oculus_h.pkl" which hold all the given structs defined in oculus.h ready to use in python (include the packing string and sizes).
 
-(*) while building that parser I used wireshark to record some transmission between sonar an the PC that halped me understand how to better control the sonar. The recorder parser (yet not that perfect but with some crunching you can use it...) and some transimission records are also provided in that repo.
+(*) while building that parser I used wireshark to record some transmission between sonar and the PC that halped me understand how to better control the sonar. The recorder parser (yet not that perfect but with some crunching you can use it...) and some transimission records are also provided in that repo.
 
 :)
