@@ -11,32 +11,44 @@ class warpSonar:
         self.mapy = None
 
 
+    def jls_extract_def(self):
+        
+        return 
+
     def createMaps(self, srcX, srcY, degVec):
 
-        #mapx=np.zeros(img.shape,dtype='float32')
         self.srcY = srcY
         self.srcX = srcX
 
-        self.mapx=np.zeros( (srcY, int(srcX) ), dtype='float32')
-        self.mapy=self.mapx.copy()
-
-        #ang=np.deg2rad(degVec[-1])
-        #for i,teta in enumerate(np.array(np.linspace(-ang/2,ang/2,srcX))):
-        
         radVec = np.deg2rad(degVec)
+
+        #radVec2 = np.linspace(radVec[0], radVec[-1], len(radVec)*2)
+        #import ipdb; ipdb.set_trace()
+
+        extW = srcX/2+srcY*np.sin(radVec[0])
+        
+        if extW < 0:
+            self.mapx = np.zeros( (srcY, int(srcX+2*np.abs(extW)) ), dtype='float32')
+            self.mapy = self.mapx.copy()
+            shiftX = np.abs(extW)
+        else:
+            self.mapx = np.zeros( (srcY, int(srcX) ), dtype='float32')
+            self.mapy = self.mapx.copy()
+            shiftX = 0
+
+        #ang=np.deg2rad(int(degVec[-1]))
+        #for i,teta in enumerate(np.array(np.linspace(-ang,ang,srcX))):
+        
         for i,teta in enumerate(radVec):
             for j in range(srcY):
-                #b=sy-j-1+10
+            #for j in np.linspace(0, srcY, srcY*2):
                 b=j*1
                 py = b*np.cos(teta)
                 px = srcX/2+b*np.sin(teta)
-                #mapx[j,i]=px
-                #mapy[j,i]=py
                 try:
-                    self.mapx[int(py),int(px)]=i
-                    self.mapy[int(py),int(px)]=j
+                    self.mapx[int(py), int(px+shiftX)]=i
+                    self.mapy[int(py), int(px+shiftX)]=j
                 except:
-                    #import ipdb; ipdb.set_trace()
                     pass
 
 
@@ -50,6 +62,7 @@ class warpSonar:
         warped = cv2.remap(img, self.mapx, self.mapy, cv2.INTER_LINEAR)
         
         return warped
+
 
 
 if __name__=='__main__':
