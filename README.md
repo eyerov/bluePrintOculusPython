@@ -1,5 +1,5 @@
 # bluePrintOculusPython
-in process..... 
+
 implementing blue print M1200d Sonar interface, pure python...
 
 this code is used to sample raw Sonar data to gather with its metadata.
