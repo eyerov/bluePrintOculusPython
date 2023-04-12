@@ -66,22 +66,24 @@ if __name__ == "__main__":
             nBins           = 256
             pingRate        = 15    #[Hz] 
             gammaCorrection = 0xff  # 0xff -> 1 byte (0-255)
-            range           = 12    # [m] # in wide aperature up to 40[m], in narrow, up to 10[m]
+            rng             = 12    # [m] # in wide aperature up to 40[m], in narrow, up to 10[m]
             gainVal         = 60    # [%]
             sOs             = 0     # [m/s], speed of sound, 0->precalculated
             salinity        = 0     # ? (ppt}
             is16Bit         = False
+            aperture        = 1     # 1-> wide, 2->low
 
 
             simpleFireMsg2 = bpHandler.createOculusFireMsg(status['hdr'], 
                                                     nBins, 
                                                     pingRate,
                                                     gammaCorrection, 
-                                                    range,
+                                                    rng,
                                                     gainVal,
                                                     sOs,
                                                     salinity,
-                                                    is16Bit)
+                                                    is16Bit,
+                                                    aperture)
 
             pingTic = time.time()
             pingCnt = 0.0
@@ -123,14 +125,14 @@ if __name__ == "__main__":
                         nBins = 256
                         doCahngeStatus = True
                     elif key == ord('r'):
-                        range += 0.5 #[m]
-                        range = min(40, range)
-                        print('set range to %f [m]'%range)
+                        rng += 0.5 #[m]
+                        rng = min(40, rng)
+                        print('set range to %f [m]'%rng)
                         doCahngeStatus = True
                     elif key == ord('f'):
-                        range -= 0.5 #[m]
-                        range = max(1, range)
-                        print('set range to %f [m]'%range)
+                        rng -= 0.5 #[m]
+                        rng = max(1, rng)
+                        print('set range to %f [m]'%rng)
                         doCahngeStatus = True
                     elif key == ord('g'):
                         gainVal += 1 #[m]
@@ -146,6 +148,14 @@ if __name__ == "__main__":
                         is16Bit = not is16Bit
                         doCahngeStatus = True
                         print("toggle 16bit to:", is16Bit)
+                    elif key==ord('a'):
+                        if aperture==1:
+                            aperture=2
+                            print("toggle aperture to: narrow")
+                        else:
+                            aperture=1
+                            print("toggle aperture to: wide")
+                        doCahngeStatus = True
                     elif key==ord('q') or key == 27:
                         print('exit')
                         break 
@@ -157,11 +167,12 @@ if __name__ == "__main__":
                                                             nBins, 
                                                             pingRate,
                                                             gammaCorrection, 
-                                                            range,
+                                                            rng,
                                                             gainVal,
                                                             sOs,
                                                             salinity,
-                                                            is16Bit)
+                                                            is16Bit,
+                                                            aperture)
                         M1200dTcpSock.sendall(simpleFireMsg2)
 
                     

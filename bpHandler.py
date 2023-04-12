@@ -129,7 +129,7 @@ def getStatusMsg(sock, T=0.01):
 
 
 
-def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, range=12.0, gainVal=60.0, sOs=0, salinity=0, is16bit=False):
+def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, rng=12.0, gainVal=60.0, sOs=0, salinity=0, is16bit=False, aperture=1):
     '''
     typedef struct 
     {
@@ -160,7 +160,10 @@ def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, ran
     mode 2 - High Frequency Mode (narrow aperture, target identification)
     type: uint8_t
     '''
-    masterMode = 1 # type uint8_t
+    if int(apetrure) != 1 and int(aperture) != 2:
+        aperture = 1
+        print('bad aperture value, 1->wide, 2->narrow')
+    masterMode = int(aperture) # type uint8_t
     '''
     enum PingRateType : uint8_t
     {
@@ -203,8 +206,13 @@ def createOculusFireMsg(hdr, nBins = 256, pingRate=10, gammaCorrection=0xff, ran
                           # bit 2: 0 = wont send gain, 1 = send gain
                           # bit 3: 0 = send full return message, 1 = send simple return message
     
+    if aperture == 1:
+        maxRange = 40 # [m]
+    elif aperture == 2:
+        maxRange = 10 # [m]
 
-    rangePercent    = range     # type double
+    rng = min(max(rng,1), maxRange)
+    rangePercent    = rng       # type double
     gainPercent     = gainVal   # type double
     speedOfSound    = sOs       # type double; 0->internal calculation
     salinity        = salinity  # type double; 0-> fresh water(?)
