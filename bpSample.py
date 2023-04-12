@@ -17,6 +17,7 @@ if __name__ == "__main__":
         press 'g' to increase gain percentage by 1[%]
         press 'b' to increase gain percentage by 1[%]
         press 'z' to sample 16bit image (it provide 8bit streched image, but at the handler you will have the 16bit)
+        press 'a' to change aperture
 
         TBD..."""
 
