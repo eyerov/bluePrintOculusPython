@@ -36,17 +36,18 @@ class warpSonar:
             self.mapy = self.mapx.copy()
             shiftX = 0
 
-        #ang=np.deg2rad(int(degVec[-1]))
-        #for i,teta in enumerate(np.array(np.linspace(-ang,ang,srcX))):
-        
-        for i,teta in enumerate(radVec):
-            for j in range(srcY):
-            #for j in np.linspace(0, srcY, srcY*2):
-                b=j*1
+        ang     = radVec[-1] 
+        denFac  = 1
+
+        for i,teta in enumerate(np.array(np.linspace(-ang,ang,srcX*denFac))):
+        #for i,teta in enumerate(radVec):
+            #for j in range(srcY):
+            for j in np.linspace(0, srcY, srcY*denFac):
+                b=j
                 py = b*np.cos(teta)
                 px = srcX/2+b*np.sin(teta)
                 try:
-                    self.mapx[int(py), int(px+shiftX)]=i
+                    self.mapx[int(py), int(px+shiftX)]=i/denFac
                     self.mapy[int(py), int(px+shiftX)]=j
                 except:
                     pass
@@ -59,7 +60,7 @@ class warpSonar:
             self.createMaps(sx,sy,degVec)
             print('init')
 
-        warped = cv2.remap(img, self.mapx, self.mapy, cv2.INTER_LINEAR)
+        warped = cv2.remap(img, self.mapx, self.mapy, cv2.INTER_CUBIC)
         
         return warped
 
