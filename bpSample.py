@@ -109,8 +109,6 @@ if __name__ == "__main__":
             dt = 0.5
             tic = time.time()-dt
             
-            f=open(sys.argv[2],"rb")
-            f.read(48)
             while True:
                 time.sleep(0.001)
                 if time.time() - tic >= dt:
@@ -124,8 +122,6 @@ if __name__ == "__main__":
                         sonData = pickle.load(input_file)
                 print(i)
                 i=i+1
-                if sonData==-1:
-                    continue
                 if sonData is not None and (sonData[0]['msgId']==0x23 or sonData[0]['msgId']==0x22):
                     pingCnt += 1
                     nBeams = sonData[0]["nBeams"]
