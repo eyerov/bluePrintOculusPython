@@ -105,7 +105,7 @@ class warpSonar:
                     pass
 
 
-    def warpSonarImage(self, metadata, img):
+    def warpSonarImage(self, metadata, img,color=(0.1,0.2,0.7)):
         sx,sy=img.shape[1],img.shape[0]
         if (sx != self.srcX) or (sy != self.srcY):
             degVec = metadata["beamsDeg"]
@@ -115,8 +115,13 @@ class warpSonar:
             print('init')
 
         warped = cv2.remap(img, self.mapx, self.mapy, cv2.INTER_CUBIC)
+        color_image = np.zeros((warped.shape[0], warped.shape[1], 3), dtype=np.uint8)
         
-        return warped
+        # Apply the color transformation pixel-wise
+        color_image[:, :, 0] = color[0] * warped  # Blue channel
+        color_image[:, :, 1] = color[1] * warped  # Green channel
+        color_image[:, :, 2] = color[2] * warped  # Red channel
+        return color_image
 
 
 
