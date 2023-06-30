@@ -6,7 +6,8 @@ import time
 import bpHandler
 import cv2
 import sonarDisplay 
-
+import sys
+import pickle
 if __name__ == "__main__":
     usege = """usage:\n  
     while sonar image is on scope you can do the following actions:
@@ -22,19 +23,24 @@ if __name__ == "__main__":
         TBD..."""
 
     print(usege)
+    if len(sys.argv)>1:
+        live = (sys.argv[1]=="live")
+    else:
+        print("python bpSample.py live\nOR\npython bpSample.py notlive")
 
    
     winName = 'sonData'
     cv2.namedWindow(winName, 0)
-    ws = warpSonar()
+    ws = sonarDisplay.warpSonar()
     warpIm = True
 
     try:    
-        statusPort  = 52102
-        tcpPort     = 52100
+        if live:
+            statusPort  = 52102
+            tcpPort     = 52100
 
-        udpStatusSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpStatusSock.bind(("", statusPort))
+            udpStatusSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            udpStatusSock.bind(("", statusPort))
 
         context = zmq.Context()
         M1200dTcpSock = None
@@ -42,26 +48,29 @@ if __name__ == "__main__":
         # get sonar status (and ip), as sonar init procedure...
         statusTic = time.time()
         statusCnt = 0.0
+        i=0
         while True:
             
-            status = bpHandler.getStatusMsg(udpStatusSock)
-            if status is not None:
-                statusCnt += 1
-            if time.time() - statusTic >= 3:
-                sps = statusCnt/(time.time()-statusTic)
-                print("Status rate: %0.2fHz"%sps)
-                statusTic = time.time()
-                statusCnt = 0.0
+            if live:
+                status = bpHandler.getStatusMsg(udpStatusSock)
+                if status is not None:
+                    statusCnt += 1
+                if time.time() - statusTic >= 3:
+                    sps = statusCnt/(time.time()-statusTic)
+                    print("Status rate: %0.2fHz"%sps)
+                    statusTic = time.time()
+                    statusCnt = 0.0
             
-            if (status is not None) and ('ipAddr' in status['status'].keys()):
-                print("Initiate Tcp connection to: %s "%status['status']['ipAddr'])
-                M1200dTcpSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                M1200dTcpSock.connect( ("%s" %status['status']['ipAddr'], tcpPort) )
-                break
+                if (status is not None) and ('ipAddr' in status['status'].keys()):
+                    print("Initiate Tcp connection to: %s "%status['status']['ipAddr'])
+                    M1200dTcpSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    M1200dTcpSock.connect( ("%s" %status['status']['ipAddr'], tcpPort) )
+                    break
+            else:break
 
         
         # Handle sonar data
-        if M1200dTcpSock is not None:
+        if (M1200dTcpSock is not None) or (not live):
             
             # init sonar values
             nBins           = 256
@@ -75,16 +84,17 @@ if __name__ == "__main__":
             aperture        = 1     # 1-> wide, 2->low
 
 
-            simpleFireMsg2 = bpHandler.createOculusFireMsg(status['hdr'], 
-                                                    nBins, 
-                                                    pingRate,
-                                                    gammaCorrection, 
-                                                    rng,
-                                                    gainVal,
-                                                    sOs,
-                                                    salinity,
-                                                    is16Bit,
-                                                    aperture)
+            if live:
+                simpleFireMsg2 = bpHandler.createOculusFireMsg(status['hdr'], 
+                                                        nBins, 
+                                                        pingRate,
+                                                        gammaCorrection, 
+                                                        rng,
+                                                        gainVal,
+                                                        sOs,
+                                                        salinity,
+                                                        is16Bit,
+                                                        aperture)
 
             pingTic = time.time()
             pingCnt = 0.0
@@ -99,13 +109,23 @@ if __name__ == "__main__":
             dt = 0.5
             tic = time.time()-dt
             
+            f=open(sys.argv[2],"rb")
+            f.read(48)
             while True:
                 time.sleep(0.001)
                 if time.time() - tic >= dt:
-                    M1200dTcpSock.sendall(simpleFireMsg2)
+                    if live:
+                        M1200dTcpSock.sendall(simpleFireMsg2)
                     tic = time.time()
-                sonData = bpHandler.handleOculusMsg(M1200dTcpSock)
-                
+                if live:
+                    sonData = bpHandler.handleOculusMsg(M1200dTcpSock)
+                else:
+                    with open(f"sonar/data{i}.pickle", "rb") as input_file:
+                        sonData = pickle.load(input_file)
+                print(i)
+                i=i+1
+                if sonData==-1:
+                    continue
                 if sonData is not None and (sonData[0]['msgId']==0x23 or sonData[0]['msgId']==0x22):
                     pingCnt += 1
                     nBeams = sonData[0]["nBeams"]
@@ -161,7 +181,8 @@ if __name__ == "__main__":
                         print('exit')
                         break 
 
-                    
+                    if not live:
+                        doCahngeStatus=False
                     if doCahngeStatus:
                         doCahngeStatus = False 
                         simpleFireMsg2 = bpHandler.createOculusFireMsg(status['hdr'], 
@@ -188,8 +209,9 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
     finally:
-        print("terminate connection to sonar:tcp://%s:%s" %(status['status']['ipAddr'], tcpPort) )
-        M1200dTcpSock.close() #"tcp://%s:%s" %(status['status']['ipAddr'], tcpPort) )
+        if live:
+            print("terminate connection to sonar:tcp://%s:%s" %(status['status']['ipAddr'], tcpPort) )
+            M1200dTcpSock.close() #"tcp://%s:%s" %(status['status']['ipAddr'], tcpPort) )
         
             
         
