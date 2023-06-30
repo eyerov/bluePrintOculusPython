@@ -118,6 +118,9 @@ if __name__ == "__main__":
                 if live:
                     sonData = bpHandler.handleOculusMsg(M1200dTcpSock)
                 else:
+                    if not os.path.exists(f"sonar/data{i}.pickle"):
+                        print(f"sonar/data{i}.pickle Doesn't exist. Resetting i to 0")
+                        i=0
                     with open(f"sonar/data{i}.pickle", "rb") as input_file:
                         sonData = pickle.load(input_file)
                 print(i)
