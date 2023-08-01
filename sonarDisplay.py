@@ -38,8 +38,8 @@ class warpSonar:
         self.srcY = srcY
         self.srcX = srcX
         deg=max(degVec)
-        mapfilename=os.path.join(os.path.dirname(__file__),f"oculussonarmap{deg}.pkl")
-        print('mapfilename:    ', mapfilename)
+        mapfilename=os.path.join(os.path.dirname(__file__),f"oculussonarmap{int(deg)}.pkl")
+        print('mapfilename: ', mapfilename)
         st=datetime.now()
         out_h=1080
         out_w=1920
