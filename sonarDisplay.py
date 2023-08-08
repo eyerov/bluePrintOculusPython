@@ -13,8 +13,8 @@ class warpSonar:
 
         self.mapx = None
         self.mapy = None
-
-
+        self.show_grid()
+ 
     def jls_extract_def(self):
         
         return 
@@ -135,7 +135,29 @@ class warpSonar:
         #import pdb;pdb.set_trace()
         warped = cv2.remap(img, self.mapx, self.mapy, cv2.INTER_CUBIC)
         color_image=cv2.applyColorMap(warped,colormap)
-        return color_image
+        mask=np.zeros_like(color_image)
+        #import pdb;pdb.set_trace()
+        cx,cy= (final_w//2,final_h-1)
+        deg=65
+        r_max=math.floor((final_w-2)/math.sin(deg*math.pi/180)/2)
+
+        mask   = cv2.ellipse(mask , (cx,cy),(r_max,r_max),  0   ,270-deg    , 270+deg  , (1,1,1)    ,   -1     )
+        color_image_out =  np.multiply(color_image,mask)
+        if self.show_grid_flag:
+            for i in range(1,6,1):
+                color_image_out=cv2.ellipse(color_image_out , (cx,cy),(r_max*i//5,r_max*i//5),  0   ,270-deg    , 270+deg  , (255,255,255)    ,   1     )
+            for i in range(0,5,1):
+                x=int(cx-r_max*math.sin((deg-2*deg*i/4)*math.pi/180))
+                y=int(cy-r_max*math.cos((deg-2*deg*i/4)*math.pi/180))
+                print("xy=",x,y)
+                color_image_out=cv2.line(color_image_out , (cx,cy),(x,y),(255,255,255)    ,   1     )
+                cv2.imshow("win",color_image_out)
+                cv2.waitKey(0)
+        return color_image_out
+    def show_grid(self):
+        self.show_grid_flag=True
+    def hide_grid(self):
+        self.show_grid_flag=False
 
 
 
